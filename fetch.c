@@ -89,7 +89,7 @@ size_t write_data(void* data, size_t always_1, size_t size, UwValuePtr self)
         if (uw_error(&filename) || uw_strlen(&filename) == 0) {
             // get file name from URL
             UwValue parts = uw_string_split_chr(&curl_req->url, '?', 1);
-            UwValue url = uw_list_item(&parts, 0);
+            UwValue url = uw_array_item(&parts, 0);
             uw_destroy(&filename);
             filename = uw_basename(&url);
             if (uw_error(&filename)) {
@@ -197,7 +197,7 @@ int main(int argc, char* argv[])
     void* session = create_curl_session();
 
     // parse command line arguments
-    UwValue urls = UwList();
+    UwValue urls = UwArray();
     UwValue parallel = UwUnsigned(1);
     for (int i = 1; i < argc; i++) {{  // mind double curly brackets for nested scope
         // nested scope makes autocleaning working after each iteration
@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
         UwValue arg = uw_create_string(argv[i]);
 
         if (uw_startswith(&arg, "http://") || uw_startswith(&arg, "https://")) {
-            uw_list_append(&urls, &arg);
+            uw_array_append(&urls, &arg);
 
         } else if (uw_startswith(&arg, "verbose=")) {
             UwValue v = uw_substr(&arg, strlen("verbose="), uw_strlen(&arg));
@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
             }
         }
     }}
-    if (uw_list_length(&urls) == 0) {
+    if (uw_array_length(&urls) == 0) {
         printf("Usage: fetch [verbose=1|0] [proxy=<proxy>] [parallel=<n>] url1 url2 ...\n");
         goto out;
     }
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
     // fetch URLs
     // prepare first request
     {
-        UwValue url = uw_list_pop(&urls);
+        UwValue url = uw_array_pop(&urls);
         if (uw_error(&url)) {
             uw_print_status(stdout, &url);
             goto out;
@@ -249,10 +249,10 @@ int main(int argc, char* argv[])
         unsigned i = running_transfers;
         // add more requests
         for(; i < parallel.signed_value; i++) {{
-            if (uw_list_length(&urls) == 0) {
+            if (uw_array_length(&urls) == 0) {
                 break;
             }
-            UwValue url = uw_list_pop(&urls);
+            UwValue url = uw_array_pop(&urls);
             if (uw_error(&url)) {
                 uw_print_status(stdout, &url);
                 break;

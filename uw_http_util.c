@@ -229,7 +229,7 @@ static inline char xdigit_to_num(char** current_char)
     }
 }
 
-static inline unsigned char parse_value_char(char** current_char)
+static inline char32_t parse_value_char(char** current_char)
 /*
  * value-chars = *( pct-encoded / attr-char )
  *
@@ -242,7 +242,7 @@ static inline unsigned char parse_value_char(char** current_char)
  *               ; token except ( "*" / "'" / "%" )
  */
 {
-    unsigned char c = **current_char;
+    char c = **current_char;
 
     if (isalnum(c)) {
         (*current_char)++;
@@ -268,7 +268,7 @@ static inline unsigned char parse_value_char(char** current_char)
     if (c == 0) {
         return 0;
     }
-    return (high_nibble << 4) | c;
+    return (((char32_t) high_nibble) << 4) | c;
 }
 
 static UwResult parse_ext_value(char** current_char)
@@ -327,11 +327,11 @@ static UwResult parse_ext_value(char** current_char)
     uw_return_if_error(&value);
 
     for (;;) {
-        unsigned char c = parse_value_char(current_char);
+        char32_t c = parse_value_char(current_char);
         if (c == 0) {
             break;
         }
-        if (!uw_string_append_char(&value, c)) {
+        if (!uw_string_append(&value, c)) {
             return UwOOM();
         }
     }
@@ -601,7 +601,7 @@ UwResult curl_request_get_filename(CurlRequestData* req)
     }
     uw_return_if_error(&parts);
 
-    UwValue filename = uw_list_item(&parts, -1);
+    UwValue filename = uw_array_item(&parts, -1);
     if (uw_strlen(&filename) == 0) {
         if (!uw_string_append(&filename, "index.html")) {
             return UwOOM();
