@@ -324,9 +324,7 @@ static UwResult parse_ext_value(char** current_char)
     *current_char = value_ptr;
 
     UwValue value = uw_create_empty_string(strlen(value_ptr) + 1, 1);
-    if (uw_error(&value)) {
-        return uw_move(&value);
-    }
+    uw_return_if_error(&value);
 
     for (;;) {
         unsigned char c = parse_value_char(current_char);
@@ -339,14 +337,10 @@ static UwResult parse_ext_value(char** current_char)
     }
 
     UwValue charset = uw_create_string_cstr(charset_ptr);
-    if (uw_error(&charset)) {
-        return uw_move(&charset);
-    }
+    uw_return_if_error(&charset);
 
     UwValue language = uw_create_string_cstr(language_ptr);
-    if (uw_error(&language)) {
-        return uw_move(&language);
-    }
+    uw_return_if_error(&language);
 
     return UwMap(
         UwCharPtr("charset"),  uw_move(&charset),
@@ -599,16 +593,13 @@ UwResult curl_request_get_filename(CurlRequestData* req)
     char* last_location = get_response_header(req->easy_handle, "Location");
     if (last_location) {
         UwValue location = uw_create_string_cstr(last_location);
-        if (uw_error(&location)) {
-            return uw_move(&location);
-        }
+        uw_return_if_error(&location);
+
         parts = uw_string_split_chr(&location, '/', 0);
     } else {
         parts = uw_string_split_chr(&req->url, '/', 0);
     }
-    if (uw_error(&parts)) {
-        return uw_move(&parts);
-    }
+    uw_return_if_error(&parts);
 
     UwValue filename = uw_list_item(&parts, -1);
     if (uw_strlen(&filename) == 0) {

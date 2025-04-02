@@ -52,9 +52,7 @@ static UwResult init_curl_request(UwValuePtr self, void* ctor_args)
     // call super method
 
     UwValue status = uw_ancestor_of(UwTypeId_CurlRequest)->init(self, ctor_args);
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
 
     // init request
 
