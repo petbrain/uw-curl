@@ -330,7 +330,7 @@ static void check_transfers(CURLM* multi_handle)
             curl_easy_getinfo(req->easy_handle, CURLINFO_EFFECTIVE_URL, &url);
             if (url) {
                 uw_destroy(&req->real_url);
-                req->real_url = uw_create_string_cstr(url);
+                req->real_url = uw_create_string(url);
             }
             // get response status
             curl_update_status(request);

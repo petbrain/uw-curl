@@ -114,7 +114,7 @@ static UwResult parse_token(char** current_char)
     if (uw_ok(&token)) {
         size_t token_length = token_end - token_start;
         if (token_length) {
-            if (!uw_string_append_substring_cstr(&token, token_start, 0, token_length)) {
+            if (!uw_string_append_substring(&token, token_start, 0, token_length)) {
                 return UwOOM();
             }
         }
@@ -163,7 +163,7 @@ static UwResult parse_quoted_string(char** current_char)
         // append what we've got and skip quote char
         qstr_length = qstr_end - qstr_start;
         if (qstr_length) {
-            if (!uw_string_append_substring_cstr(&result, qstr_start, 0, qstr_length)) {
+            if (!uw_string_append_substring(&result, qstr_start, 0, qstr_length)) {
                 return UwOOM();
             }
         }
@@ -178,7 +178,7 @@ static UwResult parse_quoted_string(char** current_char)
     } else {
         qstr_length = qstr_end - qstr_start;
         if (qstr_length) {
-            if (!uw_string_append_substring_cstr(&result, qstr_start, 0, qstr_length)) {
+            if (!uw_string_append_substring(&result, qstr_start, 0, qstr_length)) {
                 return UwOOM();
             }
         }
@@ -336,10 +336,10 @@ static UwResult parse_ext_value(char** current_char)
         }
     }
 
-    UwValue charset = uw_create_string_cstr(charset_ptr);
+    UwValue charset = uw_create_string(charset_ptr);
     uw_return_if_error(&charset);
 
-    UwValue language = uw_create_string_cstr(language_ptr);
+    UwValue language = uw_create_string(language_ptr);
     uw_return_if_error(&language);
 
     return UwMap(
@@ -592,7 +592,7 @@ UwResult curl_request_get_filename(CurlRequestData* req)
 
     char* last_location = get_response_header(req->easy_handle, "Location");
     if (last_location) {
-        UwValue location = uw_create_string_cstr(last_location);
+        UwValue location = uw_create_string(last_location);
         uw_return_if_error(&location);
 
         parts = uw_string_split_chr(&location, '/', 0);
@@ -640,7 +640,7 @@ UwResult urljoin_cstr(char* base_url, char* other_url)
         fprintf(stderr, "FATAL: %s URL error: %s\n", __func__, curl_url_strerror(rc));
         exit(1);
     }
-    UwValue result = uw_create_string_cstr(url);
+    UwValue result = uw_create_string(url);
     curl_free(url);
     curl_url_cleanup(handle);
     return uw_move(&result);
