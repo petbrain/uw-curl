@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include <uw.h>
 
 #include "uw_curl.h"

@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <uw.h>
@@ -349,7 +350,7 @@ static UwResult parse_ext_value(char** current_char)
     );
 }
 
-static bool parse_media_type(char** current_char, CurlRequestData* req)
+static UwResult parse_media_type(char** current_char, CurlRequestData* req)
 /*
  * https://datatracker.ietf.org/doc/html/rfc7231#section-3.1.1.1
  *
@@ -363,21 +364,18 @@ static bool parse_media_type(char** current_char, CurlRequestData* req)
  */
 {
     UwValue media_type = parse_token(current_char);
-    if (uw_error(&media_type)) {
-        return false;
-    }
+    uw_return_if_error(&media_type);
+
     if (**current_char == 0) {
-        return false;
+        return UwError(UW_ERROR_EOF); // XXX no suitable error code
     }
     if (**current_char != '/') {
-        return false;
+        return UwError(UW_ERROR_EOF); // XXX no suitable error code
     }
     (*current_char)++;
 
     UwValue media_subtype = parse_token(current_char);
-    if (uw_error(&media_subtype)) {
-        return false;
-    }
+    uw_return_if_error(&media_subtype);
 
     UwValue params = UwMap();
     for (;;) {
@@ -415,9 +413,7 @@ static bool parse_media_type(char** current_char, CurlRequestData* req)
             }
 
             uw_string_lower(&param_name);
-            if (!uw_map_update(&params, &param_name, &param_value)) {
-                return false;
-            }
+            uw_expect_ok( uw_map_update(&params, &param_name, &param_value) );
         }
     }
     uw_destroy(&req->media_type);
@@ -426,10 +422,10 @@ static bool parse_media_type(char** current_char, CurlRequestData* req)
     req->media_type        = uw_move(&media_type);
     req->media_subtype     = uw_move(&media_subtype);
     req->media_type_params = uw_move(&params);
-    return true;
+    return UwOK();
 }
 
-static bool parse_content_disposition(char** current_char, CurlRequestData* req)
+static UwResult parse_content_disposition(char** current_char, CurlRequestData* req)
 /*
  * content-disposition = "Content-Disposition" ":"
  *                             disposition-type *( ";" disposition-parm )
@@ -451,9 +447,8 @@ static bool parse_content_disposition(char** current_char, CurlRequestData* req)
  */
 {
     UwValue disposition_type = parse_token(current_char);
-    if (uw_error(&disposition_type)) {
-        return false;
-    }
+    uw_return_if_error(&disposition_type);
+
     uw_string_lower(&disposition_type);
 
     UwValue params = UwMap();
@@ -500,16 +495,14 @@ static bool parse_content_disposition(char** current_char, CurlRequestData* req)
             }
 
             uw_string_lower(&param_name);
-            if (!uw_map_update(&params, &param_name, &param_value)) {
-                return false;
-            }
+            uw_expect_ok( uw_map_update(&params, &param_name, &param_value) );
         }
     }
     uw_destroy(&req->disposition_type);
     uw_destroy(&req->disposition_params);
     req->disposition_type   = uw_move(&disposition_type);
     req->disposition_params = uw_move(&params);
-    return true;
+    return UwOK();
 }
 
 void curl_request_parse_content_type(CurlRequestData* req)
@@ -527,7 +520,8 @@ void curl_request_parse_content_type(CurlRequestData* req)
         return;
     }
     char* ct = content_type;
-    if (!parse_media_type(&ct, req)) {
+    UwValue status = parse_media_type(&ct, req);
+    if (uw_error(&status)) {
         fprintf(stderr, "WARNING: failed to parse content type %s\n", content_type);
     }
 }
@@ -544,7 +538,8 @@ void curl_request_parse_content_disposition(CurlRequestData* req)
 
     puts(content_disposition);
     char* p = content_disposition;
-    if (!parse_content_disposition(&p, req)) {
+    UwValue status = parse_content_disposition(&p, req);
+    if (uw_error(&status)) {
         fprintf(stderr, "WARNING: failed to parse content dispostion %s\n", content_disposition);
     }
 }
